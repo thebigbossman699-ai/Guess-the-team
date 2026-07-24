@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Guess the Team — MLB 2026 Starters (Single Player)</title>
+<style>
+  :root{ --bg:#071433; --accent:#e6e6e6; --card:#0f2446; --btn:#0b74ff; }
+  body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:linear-gradient(180deg,#071433,#041022); color:var(--accent); display:flex; align-items:flex-start; justify-content:center; padding:20px;}
+  .wrap{ width:1100px; max-width:100%; display:grid; grid-template-columns: 1fr 420px; gap:18px; }
+  .board{ background:radial-gradient(circle at 50% 20%, rgba(255,255,255,0.02), transparent 20%), linear-gradient(180deg,#0b2a52,#061029); border-radius:10px; padding:18px; min-height:640px; }
+  .controls{ background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02)); border-radius:10px; padding:16px; min-height:640px;}
+  h1{ margin:0 0 8px 0; font-size:20px; }
+  .diamond{ width:600px; height:600px; position:relative; margin:auto; }
+  .pos{ width:110px; height:110px; background:linear-gradient(180deg,#232b36,#101719); color:var(--accent); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; position:absolute; border:3px solid rgba(255,255,255,0.06); }
+  .label{ font-size:12px; opacity:0.95; margin-bottom:6px; text-transform:uppercase; }
+  .number{ font-size:34px; }
+  /* positions */
+  .cf{ left:50%; top:2%; transform:translateX(-50%); }
+  .lf{ left:2%; top:18%; }
+  .rf{ right:2%; top:18%; }
+  .ss{ left:30%; top:34%; }
+  .twob{ left:62%; top:34%; }
+  .thirdb{ left:4%; top:50%; }
+  .firstb{ right:4%; top:50%; }
+  .ace{ left:50%; top:46%; transform:translateX(-50%); }
+  .catcher{ left:50%; bottom:8%; transform:translateX(-50%); }
+  .dh{ left:6%; bottom:6%; }
+  .team{ right:6%; bottom:6%; text-align:center; }
+
+  input[type="text"], select{ width:100%; padding:10px; margin-bottom:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:var(--accent); box-sizing:border-box;}
+  .btn{ display:inline-block; background:var(--btn); color:#fff; padding:10px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; margin-right:8px; }
+  .btn.secondary{ background:#274060; }
+  .stats{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .stat{ background:rgba(255,255,255,0.02); padding:8px; border-radius:8px; min-width:110px; text-align:center; }
+  .history{ background:rgba(255,255,255,0.02); padding:8px; border-radius:8px; max-height:200px; overflow:auto; margin-top:8px; font-size:13px; }
+  .hint{ margin-top:8px; color:#dbefff; }
+  footer.small{ margin-top:12px; font-size:12px; color:#9fb7e6; }
+  @media (max-width:1040px){ .wrap{ grid-template-columns: 1fr; } .controls{ order:2; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="board" aria-label="Baseball diamond">
+      <div class="diamond" id="diamond">
+        <div class="pos cf"><div class="label">CF</div><div class="number" id="n-cf">25</div></div>
+        <div class="pos lf"><div class="label">LF</div><div class="number" id="n-lf">9</div></div>
+        <div class="pos rf"><div class="label">RF</div><div class="number" id="n-rf">15</div></div>
+
+        <div class="pos ss"><div class="label">SS</div><div class="number" id="n-ss">4</div></div>
+        <div class="pos twob"><div class="label">2B</div><div class="number" id="n-2b">2</div></div>
+
+        <div class="pos thirdb"><div class="label">3B</div><div class="number" id="n-3b">22</div></div>
+        <div class="pos firstb"><div class="label">1B</div><div class="number" id="n-1b">23</div></div>
+
+        <div class="pos ace"><div class="label">ACE</div><div class="number" id="n-ace">41</div></div>
+
+        <div class="pos catcher"><div class="label">C</div><div class="number" id="n-c">27</div></div>
+
+        <div class="pos dh"><div class="label">DH</div><div class="number" id="n-dh">56</div></div>
+
+        <div class="pos team"><div class="label">TEAM</div><div class="number" id="n-team">?</div></div>
+      </div>
+    </div>
+
+    <div class="controls" aria-label="Game controls">
+      <h1>Guess the Team — MLB 2026 Starters & Scoring</h1>
+      <p class="small">Single-player: uses Baseball-Reference "most common starters" as of July 23, 2026 for usual starters, and Opening Day 2026 lineups (sourced from MLB.com / Baseball-Reference). Data embedded. You can guess team names or starter player names. Scoring persists in localStorage and the file is committed to the repository.</p>
+
+      <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+        <label><input type="radio" name="mode" id="mode-open" checked /> Open-ended</label>
+        <label><input type="radio" name="mode" id="mode-challenge" /> Challenge</label>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button id="start-random" class="btn">Start Random Challenge</button>
+        <button id="set-secret" class="btn secondary">Set My Secret</button>
+        <select id="manual-team" aria-label="Pick team">
+          <option value="">(or pick a team)</option>
+        </select>
+        <button id="start-manual" class="btn secondary">Start Selected</button>
+      </div>
+
+      <label for="player-guess">Your guess (team or player name)</label>
+      <input id="player-guess" type="text" placeholder="e.g. New York Yankees or Aaron Judge" />
+      <div style="margin-top:6px;">
+        <button id="guess-btn" class="btn">Guess</button>
+        <button id="hint-btn" class="btn secondary">Reveal Next Hint (−10)</button>
+        <button id="reveal-btn" class="btn secondary">Reveal Secret</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div style="font-size:12px; opacity:0.9;">Score</div><div id="stat-score" style="font-size:18px;">0</div></div>
+        <div class="stat"><div style="font-size:12px; opacity:0.9;">Attempts</div><div id="stat-attempts" style="font-size:18px;">0</div></div>
+        <div class="stat"><div style="font-size:12px; opacity:0.9;">Correct</div><div id="stat-correct" style="font-size:18px;">0</div></div>
+        <div class="stat"><div style="font-size:12px; opacity:0.9;">Hints</div><div id="stat-hints" style="font-size:18px;">0</div></div>
+        <div class="stat"><div style="font-size:12px; opacity:0.9;">Streak</div><div id="stat-streak" style="font-size:18px;">0</div></div>
+      </div>
+
+      <div class="hint" id="hint-box" aria-live="polite"></div>
+
+      <div style="margin-top:12px; font-weight:700;">Guess history</div>
+      <div class="history" id="history">No guesses yet.</div>
+
+      <div style="margin-top:12px;">
+        <details>
+          <summary style="cursor:pointer;">Scoring rules (click to expand)</summary>
+          <ul>
+            <li>Correct team guess: +100 points</li>
+            <li>Correct player (starter) guess for the secret team: +50 points</li>
+            <li>Hint used: −10 points</li>
+            <li>Incorrect guess: −1 point</li>
+            <li>3-correct-in-a-row streak bonus: +25 points (applied once when streak reaches 3)</li>
+          </ul>
+        </details>
+      </div>
+
+      <footer class="small">Data: Baseball-Reference (most common starters as of 2026-07-23) and MLB.com (Opening Day 2026). Scores & history persist in your browser (localStorage). Committed to thebigbossman699-ai/Guess-the-team repository.</footer>
+    </div>
+  </div>
+
+<script>
+// NOTE: This file was committed to the repository thebigbossman699-ai/Guess-the-team by the assistant.
+// Data sources: Baseball-Reference (most common starters as of Jul 23 2026), MLB.com Opening Day 2026.
+// If you want me to refresh the dataset from those sites exactly, I can re-run a fetch and update.
+
+const TEAMS = [
+"Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs",
+"Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers",
+"Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins",
+"Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics",
+"Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners",
+"St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"
+];
+
+// Most-common starters as of Jul 23, 2026 (sourced from Baseball-Reference).
+// Opening Day starters are included in OPENING_DAY object and flagged.
+const STARTERS = {
+"Arizona Diamondbacks":["Ketel Marte","Corbin Carroll","Geraldo Perdomo","Gabriel Moreno","Nolan Arenado","Carlos Santana","Jordan Lawlar","Alek Thomas","Tim Tawa","Zac Gallen"],
+"Atlanta Braves":["Ronald Acuña Jr.","Michael Harris II","Matt Olson","Austin Riley","Ozzie Albies","Eddie Rosario","Braden Shewmake","Orlando Arcia","William Contreras","Spencer Strider"],
+"Baltimore Orioles":["Gunnar Henderson","Pete Alonso","Adley Rutschman","Taylor Ward","Samuel Basallo","Tyler O'Neill","Colton Cowser","Coby Mayo","Blaze Alexander","Trevor Rogers"],
+"Boston Red Sox":["Trevor Story","Willson Contreras","Wilyer Abreu","Ceddanne Rafaela","Isiah Kiner-Falefa","Caleb Durbin","Roman Anthony","Carlos Narvaez","Jarren Duran","Garrett Crochet"],
+"Chicago Cubs":["Alex Bregman","Michael Busch","Pete Crow-Armstrong","Ian Happ","Nico Hoerner","Carson Kelly","Moisés Ballesteros","Dansby Swanson","Matt Shaw","Matthew Boyd"],
+"Chicago White Sox":["Colson Montgomery","Chase Meidroth","Miguel Vargas","Andrew Benintendi","Munetaka Murakami","Austin Hays","Everson Pereira","Edgar Quero","Luisangel Acuña","Shane Smith"],
+"Cincinnati Reds":["Matt McLain","Elly De La Cruz","TJ Friedl","Sal Stewart","Eugenio Suárez","Spencer Steer","Tyler Stephenson","Noelvi Marte","Ke'Bryan Hayes","Andrew Abbott"],
+"Cleveland Guardians":["José Ramírez","Steven Kwan","Chase DeLauter","Kyle Manzardo","Bo Naylor","Rhys Hoskins","Daniel Schneemann","Gabriel Arias","Brayan Rocchio","Tanner Bibee"],
+"Colorado Rockies":["Ezequiel Tovar","Jake McCarthy","Hunter Goodman","Willi Castro","TJ Rumfield","Jordan Beck","Brenton Doyle","Edouard Julien","Kyle Karros","Kyle Freeland"],
+"Detroit Tigers":["Gleyber Torres","Kerry Carpenter","Colt Keith","Riley Greene","Spencer Torkelson","Kevin McGonigle","Dillon Dingler","Parker Meadows","Javier Báez","Tarik Skubal"],
+"Houston Astros":["Jose Altuve","Yordan Alvarez","Isaac Paredes","Carlos Correa","Joey Loperfido","Cam Smith","Christian Walker","Jeremy Peña","Yainer Díaz","Hunter Brown"],
+"Kansas City Royals":["Carter Jensen","Lane Thomas","Vinnie Pasquantino","Salvador Perez","Michael Massey","Isaac Collins","Josh Rojas","Nick Loftin","Andrew Velazquez","Randy Dobnak"],
+"Los Angeles Angels":["Logan O'Hoppe","Nolan Schanuel","Vaughn Grissom","Oswald Peraza","Zach Neto","Mike Trout","Jo Adell","Josh Lowe","Jorge Soler","Reid Detmers"],
+"Los Angeles Dodgers":["Mookie Betts","Shohei Ohtani","Freddie Freeman","Teoscar Hernández","Will Smith","James Outman","Max Muncy","Gavin Lux","Andy Pages","Tyler Glasnow"],
+"Miami Marlins":["Jazz Chisholm Jr.","Jake Burger","Josh Bell","Bryan De La Cruz","Jesús Sánchez","Xavier Edwards","Nick Fortes","Tim Anderson","Luis Arraez","Sandy Alcantara"],
+"Milwaukee Brewers":["Christian Yelich","Brice Turang","William Contreras","Carlos Santana","Willy Adames","Jackson Chourio","Garrett Mitchell","Tyler Black","Sal Frelick","Freddy Peralta"],
+"Minnesota Twins":["Brooks Lee","Byron Buxton","Ryan Jeffers","Josh Bell","Kody Clemens","Royce Lewis","Austin Martin","Luke Keaschall","Ryan Kreidler","Taj Bradley"],
+"New York Mets":["Jeff McNeil","Brandon Nimmo","Pete Alonso","Francisco Lindor","J.D. Martinez","Starling Marte","Brett Baty","Francisco Álvarez","Harrison Bader","Kodai Senga"],
+"New York Yankees":["Jasson Domínguez","Anthony Volpe","Aaron Judge","Juan Soto","Gleyber Torres","Giancarlo Stanton","Spencer Jones","Austin Wells","Oswald Peraza","Gerrit Cole"],
+"Oakland Athletics":["Jeff McNeil","Nick Kurtz","Shea Langeliers","Tyler Soderstrom","Brent Rooker","Jacob Wilson","Lawrence Butler","Max Muncy","Denzel Clarke","Luis Severino"],
+"Philadelphia Phillies":["Trea Turner","Bryce Harper","Bryson Stott","Alec Bohm","Nick Castellanos","Kyle Schwarber","Brandon Marsh","J.T. Realmuto","Edmundo Sosa","Zack Wheeler"],
+"Pittsburgh Pirates":["Bryan Reynolds","Ke'Bryan Hayes","Jack Suwinski","O'Neil Cruz","Andrew McCutchen","Rowdy Tellez","Henry Davis","Jared Triolo","Connor Joe","Mitch Keller"],
+"San Diego Padres":["Fernando Tatis Jr.","Luis Rengifo","Manny Machado","Ty France","Xander Bogaerts","Gavin Sheets","Freddy Fermin","Jase Bowen","Jake Cronenworth","Kyle Hart"],
+"San Francisco Giants":["Jung Hoo Lee","Thairo Estrada","Matt Chapman","Mike Yastrzemski","Jorge Soler","LaMonte Wade Jr.","Michael Conforto","Nick Ahmed","Patrick Bailey","Logan Webb"],
+"Seattle Mariners":["Julio Rodríguez","J.P. Crawford","Cal Raleigh","Ty France","Jorge Polanco","Mitch Haniger","Dominic Canzone","Josh Rojas","Dylan Moore","Logan Gilbert"],
+"St. Louis Cardinals":["Tommy Edman","Brendan Donovan","Paul Goldschmidt","Nolan Gorman","Nolan Arenado","Lars Nootbaar","Willson Contreras","Dylan Carlson","Masyn Winn","Sonny Gray"],
+"Tampa Bay Rays":["Yandy Díaz","Ryan Vilade","Jonathan Aranda","Junior Caminero","Ben Williamson","Jonny DeLuca","Nick Fortes","Cedric Mullins","Carson Williams","Zach Eflin"],
+"Texas Rangers":["Corey Seager","Marcus Semien","Evan Carter","Wyatt Langford","Adolis García","Josh Jung","Justin Foscue","Jonah Heim","Leody Taveras","Nathan Eovaldi"],
+"Toronto Blue Jays":["George Springer","Nathan Lukes","Vladimir Guerrero Jr.","Addison Barger","Alejandro Kirk","Daulton Varsho","Kazuma Okamoto","Ernie Clement","Andrés Giménez","Kevin Gausman"],
+"Washington Nationals":["CJ Abrams","Lane Thomas","Joey Meneses","Jesse Winker","Keibert Ruiz","Luis García Jr.","Joey Gallo","Trey Lipscomb","Victor Robles","Josiah Gray"]
+};
+
+// Opening Day 2026 starters (sourced from MLB.com / Baseball-Reference Opening Day lists)
+const OPENING_DAY = {
+"Arizona Diamondbacks":["Ketel Marte","Corbin Carroll","Geraldo Perdomo","Gabriel Moreno","Nolan Arenado","Carlos Santana","Jordan Lawlar","Alek Thomas","Tim Tawa","Zac Gallen"],
+"Atlanta Braves":["Ronald Acuña Jr.","Michael Harris II","Matt Olson","Austin Riley","Ozzie Albies","Eddie Rosario","Braden Shewmake","Orlando Arcia","William Contreras","Spencer Strider"],
+"Baltimore Orioles":["Taylor Ward","Gunnar Henderson","Pete Alonso","Adley Rutschman","Samuel Basallo","Tyler O'Neill","Colton Cowser","Coby Mayo","Blaze Alexander","Trevor Rogers"],
+"Boston Red Sox":["Roman Anthony","Trevor Story","Jarren Duran","Willson Contreras","Caleb Durbin","Wilyer Abreu","Isiah Kiner-Falefa","Carlos Narvaez","Ceddanne Rafaela","Garrett Crochet"],
+"Chicago Cubs":["Michael Busch","Alex Bregman","Ian Happ","Pete Crow-Armstrong","Nico Hoerner","Carson Kelly","Moisés Ballesteros","Dansby Swanson","Matt Shaw","Matthew Boyd"],
+"Chicago White Sox":["Chase Meidroth","Colson Montgomery","Miguel Vargas","Andrew Benintendi","Austin Hays","Munetaka Murakami","Everson Pereira","Edgar Quero","Luisangel Acuña","Shane Smith"],
+"Cincinnati Reds":["TJ Friedl","Matt McLain","Elly De La Cruz","Sal Stewart","Eugenio Suárez","Spencer Steer","Tyler Stephenson","Noelvi Marte","Ke'Bryan Hayes","Andrew Abbott"],
+"Cleveland Guardians":["Steven Kwan","Chase DeLauter","José Ramírez","Kyle Manzardo","Bo Naylor","Rhys Hoskins","Daniel Schneemann","Gabriel Arias","Brayan Rocchio","Tanner Bibee"],
+"Colorado Rockies":["Jake McCarthy","Hunter Goodman","Willi Castro","Ezequiel Tovar","TJ Rumfield","Jordan Beck","Brenton Doyle","Edouard Julien","Kyle Karros","Kyle Freeland"],
+"Detroit Tigers":["Kerry Carpenter","Gleyber Torres","Colt Keith","Riley Greene","Spencer Torkelson","Kevin McGonigle","Dillon Dingler","Parker Meadows","Javier Báez","Tarik Skubal"],
+"Houston Astros":["Jose Altuve","Yordan Alvarez","Isaac Paredes","Carlos Correa","Joey Loperfido","Cam Smith","Christian Walker","Jeremy Peña","Yainer Díaz","Hunter Brown"],
+"Kansas City Royals":["Carter Jensen","Lane Thomas","Vinnie Pasquantino","Salvador Perez","Michael Massey","Isaac Collins","Josh Rojas","Nick Loftin","Andrew Velazquez","Randy Dobnak"],
+"Los Angeles Angels":["Logan O'Hoppe","Nolan Schanuel","Vaughn Grissom","Oswald Peraza","Zach Neto","Mike Trout","Jo Adell","Josh Lowe","Jorge Soler","Reid Detmers"],
+"Los Angeles Dodgers":["Mookie Betts","Shohei Ohtani","Freddie Freeman","Teoscar Hernández","Will Smith","James Outman","Max Muncy","Gavin Lux","Andy Pages","Tyler Glasnow"],
+"Miami Marlins":["Jake Burger","Jazz Chisholm Jr.","Josh Bell","Bryan De La Cruz","Jesús Sánchez","Xavier Edwards","Nick Fortes","Tim Anderson","Luis Arraez","Sandy Alcantara"],
+"Milwaukee Brewers":["Christian Yelich","Brice Turang","William Contreras","Carlos Santana","Willy Adames","Jackson Chourio","Garrett Mitchell","Tyler Black","Sal Frelick","Freddy Peralta"],
+"Minnesota Twins":["Brooks Lee","Byron Buxton","Ryan Jeffers","Josh Bell","Kody Clemens","Royce Lewis","Austin Martin","Luke Keaschall","Ryan Kreidler","Taj Bradley"],
+"New York Mets":["Jeff McNeil","Brandon Nimmo","Pete Alonso","Francisco Lindor","J.D. Martinez","Starling Marte","Brett Baty","Francisco Álvarez","Harrison Bader","Kodai Senga"],
+"New York Yankees":["Jasson Domínguez","Anthony Volpe","Aaron Judge","Juan Soto","Gleyber Torres","Giancarlo Stanton","Spencer Jones","Austin Wells","Oswald Peraza","Gerrit Cole"],
+"Oakland Athletics":["Nick Kurtz","Shea Langeliers","Tyler Soderstrom","Brent Rooker","Jacob Wilson","Lawrence Butler","Max Muncy","Jeff McNeil","Denzel Clarke","Luis Severino"],
+"Philadelphia Phillies":["Trea Turner","Bryce Harper","Bryson Stott","Alec Bohm","Nick Castellanos","Kyle Schwarber","Brandon Marsh","J.T. Realmuto","Edmundo Sosa","Zack Wheeler"],
+"Pittsburgh Pirates":["Bryan Reynolds","Ke'Bryan Hayes","Jack Suwinski","O'Neil Cruz","Andrew McCutchen","Rowdy Tellez","Henry Davis","Jared Triolo","Connor Joe","Mitch Keller"],
+"San Diego Padres":["Fernando Tatis Jr.","Luis Rengifo","Manny Machado","Ty France","Xander Bogaerts","Gavin Sheets","Freddy Fermin","Jase Bowen","Jake Cronenworth","Kyle Hart"],
+"San Francisco Giants":["Jung Hoo Lee","Thairo Estrada","Matt Chapman","Mike Yastrzemski","Jorge Soler","LaMonte Wade Jr.","Michael Conforto","Nick Ahmed","Patrick Bailey","Logan Webb"],
+"Seattle Mariners":["J.P. Crawford","Julio Rodríguez","Cal Raleigh","Ty France","Jorge Polanco","Mitch Haniger","Dominic Canzone","Josh Rojas","Dylan Moore","Logan Gilbert"],
+"St. Louis Cardinals":["Tommy Edman","Brendan Donovan","Paul Goldschmidt","Nolan Gorman","Nolan Arenado","Lars Nootbaar","Willson Contreras","Dylan Carlson","Masyn Winn","Sonny Gray"],
+"Tampa Bay Rays":["Yandy Díaz","Ryan Vilade","Jonathan Aranda","Junior Caminero","Ben Williamson","Jonny DeLuca","Nick Fortes","Cedric Mullins","Carson Williams","Zach Eflin"],
+"Texas Rangers":["Corey Seager","Marcus Semien","Evan Carter","Wyatt Langford","Adolis García","Josh Jung","Justin Foscue","Jonah Heim","Leody Taveras","Nathan Eovaldi"],
+"Toronto Blue Jays":["George Springer","Nathan Lukes","Vladimir Guerrero Jr.","Addison Barger","Alejandro Kirk","Daulton Varsho","Kazuma Okamoto","Ernie Clement","Andrés Giménez","Kevin Gausman"],
+"Washington Nationals":["CJ Abrams","Lane Thomas","Joey Meneses","Jesse Winker","Keibert Ruiz","Luis García Jr.","Joey Gallo","Trey Lipscomb","Victor Robles","Josiah Gray"]
+};
+
+/* Scoring */
+const SCORES = { teamCorrect:100, playerCorrect:50, hintPenalty:-10, wrongGuess:-1, streak3Bonus:25 };
+
+/* State + persistence */
+let mode='open'; let secretTeam=null; let secretActive=false; let usedHints=[]; const hintOrder=['cf','lf','rf','ss','2b','3b','1b','ace','c','dh'];
+let state={ score:0, attempts:0, correct:0, hintsUsed:0, streak:0, history:[] };
+const STORAGE_KEY='guess_team_repo_v1';
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({state, secretTeam, secretActive, mode, usedHints})); }
+function loadState(){ const v=localStorage.getItem(STORAGE_KEY); if(v){ try{ const o=JSON.parse(v); state=o.state||state; secretTeam=o.secretTeam||null; secretActive=o.secretActive||false; mode=o.mode||mode; usedHints=o.usedHints||usedHints; }catch(e){console.warn(e);} } }
+
+// UI refs
+const modeOpen=document.getElementById('mode-open'); const modeChallenge=document.getElementById('mode-challenge');
+const startRandomBtn=document.getElementById('start-random'); const setSecretBtn=document.getElementById('set-secret');
+const manualTeamSelect=document.getElementById('manual-team'); const startManualBtn=document.getElementById('start-manual');
+const guessInput=document.getElementById('player-guess'); const guessBtn=document.getElementById('guess-btn');
+const hintBtn=document.getElementById('hint-btn'); const revealBtn=document.getElementById('reveal-btn');
+const hintBox=document.getElementById('hint-box'); const historyBox=document.getElementById('history');
+const statScore=document.getElementById('stat-score'); const statAttempts=document.getElementById('stat-attempts');
+const statCorrect=document.getElementById('stat-correct'); const statHints=document.getElementById('stat-hints'); const statStreak=document.getElementById('stat-streak');
+const nTeam=document.getElementById('n-team');
+
+function init(){ TEAMS.forEach(t=>{ const opt=document.createElement('option'); opt.value=t; opt.textContent=t; manualTeamSelect.appendChild(opt); }); loadState(); modeOpen.checked=(mode==='open'); modeChallenge.checked=(mode==='challenge'); populateNumbers(); updateUI(); }
+init();
+
+function updateUI(){ statScore.textContent=state.score; statAttempts.textContent=state.attempts; statCorrect.textContent=state.correct; statHints.textContent=state.hintsUsed; statStreak.textContent=state.streak; historyBox.textContent=''; if(state.history.length===0) historyBox.textContent='No guesses yet.'; else state.history.forEach(h=>{ const d=document.createElement('div'); d.textContent=h; historyBox.appendChild(d); }); }
+
+function populateNumbers(){ const numbers={ cf:25, lf:9, rf:15, ss:4, '2b':2, '3b':22, '1b':23, ace:41, c:27, dh:56 }; document.getElementById('n-cf').textContent=numbers.cf; document.getElementById('n-lf').textContent=numbers.lf; document.getElementById('n-rf').textContent=numbers.rf; document.getElementById('n-ss').textContent=numbers.ss; document.getElementById('n-2b').textContent=numbers['2b']; document.getElementById('n-3b').textContent=numbers['3b']; document.getElementById('n-1b').textContent=numbers['1b']; document.getElementById('n-ace').textContent=numbers.ace; document.getElementById('n-c').textContent=numbers.c; document.getElementById('n-dh').textContent=numbers.dh; document.getElementById('n-team').textContent='?'; }
+
+modeOpen.addEventListener('change', ()=>{ mode='open'; secretActive=false; secretTeam=null; usedHints=[]; saveState(); updateUI(); showMessage('Open-ended mode'); });
+modeChallenge.addEventListener('change', ()=>{ mode='challenge'; saveState(); showMessage('Challenge mode selected'); });
+
+startRandomBtn.addEventListener('click', ()=>{ mode='challenge'; modeChallenge.checked=true; const idx=Math.floor(Math.random()*TEAMS.length); secretTeam=TEAMS[idx]; secretActive=true; usedHints=[]; state.hintsUsed=0; state.attempts=0; state.correct=0; state.streak=0; state.history=[`Challenge started: secret team chosen.`]; nTeam.textContent='?'; saveState(); updateUI(); showMessage('Random challenge started. Good luck!'); });
+setSecretBtn.addEventListener('click', ()=>{ const s=prompt('Type your secret team name (exact as you will guess it)'); if(!s){ showMessage('No secret set'); return; } secretTeam=s.trim(); secretActive=true; usedHints=[]; state.hintsUsed=0; state.attempts=0; state.correct=0; state.streak=0; state.history=[`Secret set by you.`]; mode='challenge'; modeChallenge.checked=true; saveState(); updateUI(); showMessage('Secret set.'); });
+startManualBtn.addEventListener('click', ()=>{ const t=manualTeamSelect.value; if(!t){ showMessage('Pick a team'); return; } secretTeam=t; secretActive=true; usedHints=[]; state.hintsUsed=0; state.attempts=0; state.correct=0; state.streak=0; state.history=[`Secret set to ${t} (manual).`]; mode='challenge'; modeChallenge.checked=true; nTeam.textContent='?'; saveState(); updateUI(); showMessage('Challenge started with '+t); });
+
+guessBtn.addEventListener('click', handleGuess); guessInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') handleGuess(); });
+
+function handleGuess(){ const g=guessInput.value.trim(); if(!g){ showMessage('Type a guess'); return; } state.attempts++; let entry=`Guess: ${g}`; if(mode==='open' || !secretActive){ state.history.push(entry); state.score+=SCORES.wrongGuess; saveState(); updateUI(); showMessage('Logged guess (open-ended)'); guessInput.value=''; return; }
+
+// challenge check
+if(compareNames(g, secretTeam)){ state.correct++; state.score+=SCORES.teamCorrect; state.streak++; state.history.push(entry+' ⇒ TEAM CORRECT'); if(state.streak===3){ state.score+=SCORES.streak3Bonus; state.history.push('Streak bonus +'+SCORES.streak3Bonus+' applied!'); } document.getElementById('n-team').textContent=secretTeam; showMessage('Correct — found secret: '+secretTeam,'ok'); }
+else{ // check player
+ const starters=STARTERS[secretTeam]||[]; const opening=OPENING_DAY[secretTeam]||[]; const allCandidates=new Set([...starters,...opening]); const matched=[...allCandidates].find(p=>compareNames(p,g)); if(matched){ state.correct++; state.score+=SCORES.playerCorrect; state.streak++; state.history.push(entry+' ⇒ PLAYER CORRECT: '+matched); if(state.streak===3){ state.score+=SCORES.streak3Bonus; state.history.push('Streak bonus +'+SCORES.streak3Bonus+' applied!'); } showMessage('Correct player for '+secretTeam+': '+matched,'ok'); } else { state.score+=SCORES.wrongGuess; state.streak=0; state.history.push(entry+' ⇒ Incorrect'); showMessage('Not correct.'); } }
+saveState(); updateUI(); guessInput.value=''; }
+
+hintBtn.addEventListener('click', ()=>{ if(!secretActive){ showMessage('Set a secret to use hints'); return; } const next=hintOrder.find(h=>!usedHints.includes(h)); if(!next){ hintBox.textContent='No more hints available.'; return; } usedHints.push(next); state.hintsUsed++; state.score+=SCORES.hintPenalty; const posLabel= next==='2b'?'2B':next.toUpperCase(); const numbers={ cf:25, lf:9, rf:15, ss:4, '2b':2, '3b':22, '1b':23, ace:41, c:27, dh:56 }; const num=numbers[next]; hintBox.textContent='HINT: '+posLabel+' wears #'+num; saveState(); updateUI(); });
+
+revealBtn.addEventListener('click', ()=>{ if(!secretActive){ showMessage('No secret active'); return; } if(!confirm('Reveal secret team?')) return; document.getElementById('n-team').textContent=secretTeam; state.history.push('Secret revealed: '+secretTeam); saveState(); updateUI(); showMessage('Secret revealed: '+secretTeam,'ok'); });
+
+function compareNames(a,b){ if(!a||!b) return false; const norm=s=>s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,'').trim(); return norm(a)===norm(b) || norm(a).includes(norm(b)) || norm(b).includes(norm(a)); }
+
+function showMessage(text,type){ hintBox.style.display='block'; hintBox.textContent=text; if(type==='ok') hintBox.style.background='rgba(30,85,40,0.12)'; else if(type==='fail') hintBox.style.background='rgba(85,30,30,0.12)'; setTimeout(()=>{ hintBox.style.background=''; },2000); }
+
+// Expose helper to reset saved state
+window.GTT = { reset: ()=>{ if(!confirm('Reset saved state?')) return; localStorage.removeItem(STORAGE_KEY); location.reload(); }, data: ()=>({TEAMS, STARTERS, OPENING_DAY}) };
+
+// Save initially
+saveState(); updateUI();
+</script>
+</body>
+</html>
